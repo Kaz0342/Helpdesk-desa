@@ -1,0 +1,18 @@
+# Database SQLite (Jangan di-push ke GitHub biar data testing lokal nggak bocor)
+db/database.sqlite
+
+# File temporary / testing lokal
+toggle.php
+test_webhook.ps1
+
+# Konfigurasi / Dependencies (kalo misal nanti lo pake Composer)
+vendor/
+node_modules/
+.env
+
+# Editor / OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
