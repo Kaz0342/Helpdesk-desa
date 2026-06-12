@@ -17,9 +17,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $kunci = $_POST['kunci'] ?? '';
 $nilai = $_POST['nilai'] ?? '';
 
-if (empty($kunci)) {
+// Whitelist kunci pengaturan yang diizinkan
+// Mencegah penyerang menyuntikkan konfigurasi sembarang
+$kunciDiizinkan = ['auto_reply'];
+
+if (empty($kunci) || !in_array($kunci, $kunciDiizinkan, true)) {
     http_response_code(400);
-    echo json_encode(['status' => 'error', 'pesan' => 'Kunci pengaturan tidak boleh kosong.']);
+    echo json_encode(['status' => 'error', 'pesan' => 'Kunci pengaturan tidak valid.']);
     exit;
 }
 
@@ -44,6 +48,8 @@ try {
     ]);
     
 } catch (PDOException $e) {
+    // Log detail error ke server, tapi JANGAN kirim ke client
+    error_log('[HELPDESK-DESA] Update pengaturan error: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['status' => 'error', 'pesan' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['status' => 'error', 'pesan' => 'Terjadi kesalahan server.']);
 }

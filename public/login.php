@@ -11,12 +11,24 @@ if (isset($_SESSION['admin_id'])) {
     exit;
 }
 
+// Generate CSRF token jika belum ada di session
+// Token ini mencegah serangan Cross-Site Request Forgery
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 require_once __DIR__ . '/../config/database.php';
 
 $error = '';
 
 // Proses form login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Validasi CSRF token — tolak request jika token tidak cocok
+    $csrfToken = $_POST['csrf_token'] ?? '';
+    if (!hash_equals($_SESSION['csrf_token'], $csrfToken)) {
+        $error = 'Sesi tidak valid. Silakan muat ulang halaman.';
+    }
+
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
@@ -30,9 +42,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $admin = $stmt->fetch();
 
             if ($admin && password_verify($password, $admin['password_hash'])) {
-                // Login berhasil
+                // Login berhasil — regenerasi session ID untuk mencegah Session Fixation
+                session_regenerate_id(true);
                 $_SESSION['admin_id'] = $admin['id'];
                 $_SESSION['admin_username'] = $admin['username'];
+                // Hapus CSRF token lama setelah login berhasil
+                unset($_SESSION['csrf_token']);
                 header('Location: index.php');
                 exit;
             } else {
@@ -126,6 +141,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <!-- Login Form -->
             <form method="POST" action="" class="space-y-5">
+                <!-- CSRF Token (hidden field) -->
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                 <!-- Username -->
                 <div>
                     <label for="username" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Username</label>
